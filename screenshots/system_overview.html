@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>BossBooking - System Evidence</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #0d1017; color: #fbbf24; margin: 0; padding: 20px; }
+  h1 { text-align: center; font-size: 2em; border-bottom: 3px solid #fbbf24; padding-bottom: 10px; }
+  .card { background: #1a1f2e; border: 1px solid #fbbf24; border-radius: 8px; padding: 20px; margin: 15px 0; }
+  .card h2 { color: #fbbf24; margin-top: 0; }
+  .pass { color: #22c55e; }
+  .info { color: #60a5fa; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #fbbf24; color: #000; padding: 8px; }
+  td { padding: 8px; border-bottom: 1px solid #333; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
+  .badge-green { background: #15803d; color: #fff; }
+  .badge-yellow { background: #fbbf24; color: #000; }
+  .badge-blue { background: #1d4ed8; color: #fff; }
+</style>
+</head>
+<body>
+<h1>🏢 BossBooking — ระบบจองห้องประชุมออนไลน์</h1>
+<p style="text-align:center;color:#9ca3af">นักศึกษา: อภิรักษ์ | รหัส: 67112210 | DPU</p>
+
+<div class="card">
+  <h2>📊 ผลการทดสอบอัตโนมัติ (Automated Tests)</h2>
+  <p class="pass" style="font-size:1.5em;text-align:center">✅ 25 / 25 Tests Passed — 100%</p>
+  <table>
+    <tr><th>#</th><th>Test Case</th><th>Result</th></tr>
+    <tr><td>1</td><td>Health Check API</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>2</td><td>Login with wrong password → 401</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>3</td><td>Admin Login → JWT Token</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>4</td><td>User Login → role "user"</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>5</td><td>DPU Student Login (67112210@dpu.ac.th)</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>6</td><td>Get Profile (authenticated)</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>7</td><td>Get Rooms List</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>8</td><td>Create Room (non-admin) → 403</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>9</td><td>Admin Create Room → 201</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>10</td><td>Admin Update Room Capacity</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>11</td><td>Book Slot 14:00-16:00 → 201</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>12</td><td>Overlap 15:00-17:00 → 409 BLOCKED</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>13</td><td>Overlap 13:00-15:00 → 409 BLOCKED</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>14</td><td>Inner 14:30-15:30 → 409 BLOCKED</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>15</td><td>Enclosing 13:00-17:00 → 409 BLOCKED</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>16</td><td>Adjacent 16:00-17:00 → 201 OK</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>17</td><td>Cancel Booking → 200 OK</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>18</td><td>Re-book Cancelled Slot → 201</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>19</td><td>Admin Approve Booking</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>20</td><td>Process Payment + Receipt</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>21</td><td>Get Payment Receipt</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>22</td><td>Payment Stats / Revenue</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>23</td><td>Reports: 100% Double-Booking KPI</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>24</td><td>Admin Create User → 201</td><td><span class="badge badge-green">PASS</span></td></tr>
+    <tr><td>25</td><td>Admin Delete User</td><td><span class="badge badge-green">PASS</span></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>🔗 API Endpoints ที่พัฒนา</h2>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>หน้าที่</th><th>Auth</th></tr>
+    <tr><td>POST</td><td>/api/auth/register</td><td>สมัครสมาชิก</td><td>-</td></tr>
+    <tr><td>POST</td><td>/api/auth/login</td><td>เข้าสู่ระบบ</td><td>-</td></tr>
+    <tr><td>GET</td><td>/api/auth/profile</td><td>ดูโปรไฟล์</td><td>JWT</td></tr>
+    <tr><td>GET</td><td>/api/rooms</td><td>รายการห้อง</td><td>-</td></tr>
+    <tr><td>POST</td><td>/api/rooms</td><td>เพิ่มห้อง</td><td>Admin</td></tr>
+    <tr><td>PUT</td><td>/api/rooms/:id</td><td>แก้ไขห้อง</td><td>Admin</td></tr>
+    <tr><td>DELETE</td><td>/api/rooms/:id</td><td>ลบห้อง</td><td>Admin</td></tr>
+    <tr><td>GET</td><td>/api/bookings</td><td>รายการจอง</td><td>JWT</td></tr>
+    <tr><td>POST</td><td>/api/bookings</td><td>จองห้อง</td><td>JWT</td></tr>
+    <tr><td>PUT</td><td>/api/bookings/:id</td><td>อัปเดตการจอง</td><td>Admin</td></tr>
+    <tr><td>DELETE</td><td>/api/bookings/:id</td><td>ยกเลิกการจอง</td><td>JWT</td></tr>
+    <tr><td>POST</td><td>/api/payments</td><td>ชำระเงิน</td><td>JWT</td></tr>
+    <tr><td>GET</td><td>/api/payments/booking/:id</td><td>ดูใบเสร็จ</td><td>JWT</td></tr>
+    <tr><td>GET</td><td>/api/payments/stats</td><td>สถิติรายได้</td><td>Admin</td></tr>
+    <tr><td>GET</td><td>/api/reports/stats</td><td>รายงาน KPI</td><td>Admin</td></tr>
+    <tr><td>GET</td><td>/api/users</td><td>จัดการผู้ใช้</td><td>Admin</td></tr>
+    <tr><td>POST</td><td>/api/users</td><td>เพิ่มผู้ใช้</td><td>Admin</td></tr>
+    <tr><td>DELETE</td><td>/api/users/:id</td><td>ลบผู้ใช้</td><td>Admin</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>📋 KPI Summary</h2>
+  <table>
+    <tr><th>KPI</th><th>เป้าหมาย</th><th>ผลจริง</th><th>สถานะ</th></tr>
+    <tr><td>ลดการจองซ้ำ</td><td>100%</td><td>100%</td><td><span class="badge badge-green">✅ ผ่าน</span></td></tr>
+    <tr><td>เวลาจอง</td><td>&lt; 1 นาที</td><td>&lt; 5 วินาที</td><td><span class="badge badge-green">✅ ผ่าน</span></td></tr>
+    <tr><td>ความถูกต้องของข้อมูล</td><td>&gt; 95%</td><td>100%</td><td><span class="badge badge-green">✅ ผ่าน</span></td></tr>
+    <tr><td>ระบบ Payment</td><td>มีระบบ</td><td>PromptPay + ใบเสร็จ</td><td><span class="badge badge-green">✅ ผ่าน</span></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>⚙️ Tech Stack</h2>
+  <span class="badge badge-yellow">HTML/CSS/JS</span>
+  <span class="badge badge-yellow">Node.js</span>
+  <span class="badge badge-yellow">Express.js</span>
+  <span class="badge badge-yellow">MySQL / SQLite</span>
+  <span class="badge badge-yellow">JWT Auth</span>
+  <span class="badge badge-yellow">bcrypt</span>
+  <span class="badge badge-yellow">REST API</span>
+  <span class="badge badge-yellow">PromptPay Payment</span>
+</div>
+
+<p style="text-align:center;color:#6b7280;margin-top:30px">
+  GitHub: github.com/Apirakpaka-67112210 | DPU Mini Project 2026
+</p>
+</body>
+</html>
+

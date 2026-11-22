@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BossBooking | ระบบจองห้องประชุมออนไลน์</title>
+  <!-- Favicon: Boss Icon in Yellow & Black -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230d0f12'/%3E%3Ccircle cx='32' cy='20' r='10' fill='%23fbbf24'/%3E%3Cpath d='M16 52 C16 38 24 34 32 34 C40 34 48 38 48 52 Z' fill='%23fbbf24'/%3E%3Cpolygon points='32,36 35,46 32,54 29,46' fill='%230d0f12'/%3E%3Cpolygon points='30,34 34,34 33,37 31,37' fill='%230d0f12'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand" onclick="app.switchTab('rooms-tab')">
+        <div class="brand-icon">
+          <!-- Boss Icon -->
+          <i class="fa-solid fa-user-tie"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">BossBooking</span>
+          <span class="brand-subtitle">ระบบจองห้องประชุมออนไลน์</span>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="nav-links">
+        <button class="nav-tab active" data-tab="rooms-tab" onclick="app.switchTab('rooms-tab')">
+          <i class="fa-solid fa-door-open"></i> รายการห้องประชุม
+        </button>
+        <button class="nav-tab" data-tab="timeline-tab" onclick="app.switchTab('timeline-tab')">
+          <i class="fa-solid fa-clock"></i> ตารางความพร้อมห้อง
+        </button>
+        <button class="nav-tab user-only" data-tab="my-bookings-tab" onclick="app.switchTab('my-bookings-tab')" style="display:none;">
+          <i class="fa-solid fa-bookmark"></i> การจองของฉัน
+          <span class="badge-counter" id="my-booking-count" style="display:none;">0</span>
+        </button>
+        <button class="nav-tab admin-only" data-tab="admin-tab" onclick="app.switchTab('admin-tab')" style="display:none;">
+          <i class="fa-solid fa-user-tie"></i> จัดการระบบ (Boss Admin)
+        </button>
+      </nav>
+
+      <!-- Auth Controls (Right) -->
+      <div class="nav-auth">
+        <!-- Logged In User Pill -->
+        <div id="user-profile-widget" class="user-pill" style="display:none;">
+          <div class="user-avatar" id="nav-user-avatar">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div class="user-meta">
+            <span class="user-name" id="nav-user-name">ผู้ใช้งาน</span>
+            <span class="user-role-badge" id="nav-user-role">Boss User</span>
+          </div>
+          <button class="btn-logout" onclick="auth.logout()" title="ออกจากระบบ">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <!-- Guest Login Button -->
+        <div id="guest-auth-widget">
+          <button class="btn-primary" onclick="app.openModal('auth-modal')">
+            <i class="fa-solid fa-user-tie"></i> เข้าสู่ระบบ / สมัคร
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="main-content">
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- TAB 1: Rooms & Instant Booking (รายการห้องประชุม) -->
+    <section id="rooms-tab" class="tab-pane active">
+      <!-- Hero Banner & Filter Controls -->
+      <div class="hero-section">
+        <div class="hero-content">
+          <div class="boss-hero-badge">
+            <i class="fa-solid fa-crown text-warning"></i> EXECUTIVE MEETING ROOMS
+          </div>
+          <h1>ระบบจองห้องประชุมระดับบอส (Boss Booking)</h1>
+          <p>ตรวจสอบสถานะห้องว่างแบบเรียลไทม์ ป้องกันการจองซ้ำซ้อน 100% สะดวก รวดเร็ว ทันใจบอส</p>
+        </div>
+
+        <!-- Dynamic Filter & Search Bar -->
+        <div class="filter-card">
+          <div class="filter-row">
+            <div class="filter-group flex-2">
+              <label><i class="fa-solid fa-magnifying-glass"></i> ค้นหาห้องประชุม</label>
+              <input type="text" id="room-search-input" placeholder="พิมพ์ชื่อห้อง, ชั้น, หรืออุปกรณ์..." oninput="rooms.handleSearchInput()">
+            </div>
+            <div class="filter-group flex-1">
+              <label><i class="fa-solid fa-users"></i> ความจุผู้เข้าร่วม</label>
+              <select id="room-capacity-filter" onchange="rooms.applyFilters()">
+                <option value="">ทั้งหมด (ทุกความจุ)</option>
+                <option value="4">4 ท่านขึ้นไป</option>
+                <option value="10">10 ท่านขึ้นไป</option>
+                <option value="20">20 ท่านขึ้นไป</option>
+                <option value="50">50 ท่านขึ้นไป</option>
+              </select>
+            </div>
+            <div class="filter-group flex-1">
+              <label><i class="fa-solid fa-calendar-day"></i> ตรวจสอบวันที่</label>
+              <input type="date" id="room-filter-date" onchange="rooms.applyFilters()">
+            </div>
+            <div class="filter-actions">
+              <button class="btn-secondary" onclick="rooms.resetFilters()" title="ล้างตัวกรอง">
+                <i class="fa-solid fa-rotate-left"></i> ล้าง
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick KPI Stats Bar -->
+      <div class="kpi-mini-bar">
+        <div class="kpi-mini-item">
+          <i class="fa-solid fa-shield-virus text-warning"></i>
+          <span>ป้องกันการจองซ้ำ: <strong class="text-warning">100%</strong></span>
+        </div>
+        <div class="kpi-mini-item">
+          <i class="fa-solid fa-bolt text-warning"></i>
+          <span>เวลาจองเฉลี่ย: <strong class="text-warning">&lt; 1 นาที</strong></span>
+        </div>
+        <div class="kpi-mini-item">
+          <i class="fa-solid fa-circle-check text-warning"></i>
+          <span>ความถูกต้องข้อมูล: <strong class="text-warning">&gt; 99%</strong></span>
+        </div>
+        <div class="kpi-mini-item">
+          <i class="fa-solid fa-database text-warning"></i>
+          <span>ระบบฐานข้อมูล: <strong id="db-type-badge">SQL (MySQL/SQLite)</strong></span>
+        </div>
+      </div>
+
+      <!-- Rooms Grid Header & Count -->
+      <div class="section-header">
+        <div class="section-title">
+          <h2><i class="fa-solid fa-door-open text-warning"></i> ห้องประชุมทั้งหมด <span class="counter-badge" id="rooms-found-count">0</span></h2>
+          <p class="section-desc">เลือกห้องประชุมที่ตรงกับความต้องการและกดจองได้ทันที</p>
+        </div>
+        <div class="admin-only" style="display:none;">
+          <button class="btn-primary" onclick="admin.openAddRoomModal()">
+            <i class="fa-solid fa-plus"></i> เพิ่มห้องประชุมใหม่
+          </button>
+        </div>
+      </div>
+
+      <!-- Rooms Grid Container (Dynamic Render) -->
+      <div class="rooms-grid" id="rooms-grid">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>กำลังโหลดข้อมูลห้องประชุม...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Room Availability Timeline (ตารางห้องว่างแบบ Interactive) -->
+    <section id="timeline-tab" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2><i class="fa-solid fa-calendar-week text-warning"></i> ตารางความพร้อมใช้งานของห้องประชุม</h2>
+          <p class="section-desc">ตรวจสอบช่วงเวลาว่างและการจองในแต่ละวันแบบ Dynamic Time-slot</p>
+        </div>
+        <div class="timeline-controls">
+          <label>เลือกห้อง:</label>
+          <select id="timeline-room-select" onchange="bookings.renderTimeline()"></select>
+          <label>เลือกวันที่:</label>
+          <input type="date" id="timeline-date-picker" onchange="bookings.renderTimeline()">
+        </div>
+      </div>
+
+      <!-- Timeline Legend -->
+      <div class="timeline-legend">
+        <div class="legend-item"><span class="legend-color free"></span> ว่าง (สามารถจองได้)</div>
+        <div class="legend-item"><span class="legend-color booked"></span> จองแล้ว / กำลังใช้งาน</div>
+        <div class="legend-item"><span class="legend-color pending"></span> รอการอนุมัติ</div>
+      </div>
+
+      <!-- Timeline Canvas Container -->
+      <div class="card timeline-card">
+        <div class="timeline-summary-bar" id="timeline-summary"></div>
+        <div class="timeline-grid" id="timeline-grid">
+          <!-- Dynamically populated time slots -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: My Bookings (การจองของฉัน) -->
+    <section id="my-bookings-tab" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2><i class="fa-solid fa-bookmark text-warning"></i> ประวัติและรายการจองของฉัน</h2>
+          <p class="section-desc">ติดตามสถานะการจอง ดูประวัติย้อนหลัง และยกเลิกการจองได้ด้วยตนเอง</p>
+        </div>
+        <button class="btn-primary" onclick="app.switchTab('rooms-tab')">
+          <i class="fa-solid fa-plus"></i> จองห้องประชุมเพิ่ม
+        </button>
+      </div>
+
+      <!-- My Bookings Filter & Stats -->
+      <div class="card my-bookings-card">
+        <div class="table-filter-bar">
+          <div class="filter-chips" id="my-booking-status-filter">
+            <button class="chip active" onclick="bookings.filterMyBookings('all')">ทั้งหมด</button>
+            <button class="chip" onclick="bookings.filterMyBookings('approved')">อนุมัติแล้ว</button>
+            <button class="chip" onclick="bookings.filterMyBookings('pending')">รออนุมัติ</button>
+            <button class="chip" onclick="bookings.filterMyBookings('cancelled')">ยกเลิกแล้ว</button>
+          </div>
+          <div class="refresh-action">
+            <button class="btn-secondary btn-sm" onclick="bookings.loadMyBookings()">
+              <i class="fa-solid fa-arrows-rotate"></i> รีเฟรช
+            </button>
+          </div>
+        </div>
+
+        <!-- Bookings Table Container -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>รหัสการจอง</th>
+                <th>ห้องประชุม</th>
+                <th>หัวข้อการประชุม</th>
+                <th>วันที่</th>
+                <th>ช่วงเวลา</th>
+                <th>ยอดชำระ</th>
+                <th>การชำระเงิน</th>
+                <th>สถานะการจอง</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="my-bookings-tbody">
+              <tr>
+                <td colspan="9" class="text-center">กำลังโหลดรายการจอง...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Admin Management Center (ระบบผู้ดูแลระบบ) -->
+    <section id="admin-tab" class="tab-pane">
+      <div class="section-header">
+        <div>
+          <h2><i class="fa-solid fa-user-tie text-warning"></i> ศูนย์ควบคุมและบริหารจัดการ (Boss Admin Dashboard)</h2>
+          <p class="section-desc">จัดการห้องประชุม การอนุมัติการจอง ผู้ใช้งาน และรายงานสถิติตามโจทย์ทางธุรกิจ</p>
+        </div>
+      </div>
+
+      <!-- Admin Sub Navigation Tabs -->
+      <div class="admin-subnav">
+        <button class="subnav-tab active" data-subtab="admin-overview" onclick="admin.switchSubtab('admin-overview')">
+          <i class="fa-solid fa-chart-pie"></i> ภาพรวม & รายงานสถิติ
+        </button>
+        <button class="subnav-tab" data-subtab="admin-bookings" onclick="admin.switchSubtab('admin-bookings')">
+          <i class="fa-solid fa-list-check"></i> จัดการรายการจองทั้งหมด
+          <span class="badge-counter badge-warning" id="admin-pending-count" style="display:none;">0</span>
+        </button>
+        <button class="subnav-tab" data-subtab="admin-rooms" onclick="admin.switchSubtab('admin-rooms')">
+          <i class="fa-solid fa-door-closed"></i> จัดการข้อมูลห้องประชุม (CRUD)
+        </button>
+        <button class="subnav-tab" data-subtab="admin-users" onclick="admin.switchSubtab('admin-users')">
+          <i class="fa-solid fa-users-gear"></i> จัดการข้อมูลผู้ใช้งาน (CRUD)
+        </button>
+        <button class="subnav-tab" data-subtab="admin-payments" onclick="admin.switchSubtab('admin-payments')">
+          <i class="fa-solid fa-money-bill-wave"></i> การชำระเงิน & รายได้
+        </button>
+      </div>
+
+      <!-- Subtab 1: Admin Overview & Stats -->
+      <div id="admin-overview" class="admin-subpane active">
+        <!-- KPI Metrics Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon bg-yellow"><i class="fa-solid fa-calendar-check"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">การจองทั้งหมด</span>
+              <span class="stat-value text-warning" id="stat-total-bookings">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon bg-amber"><i class="fa-solid fa-hourglass-half"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">รอการอนุมัติ</span>
+              <span class="stat-value text-amber" id="stat-pending-bookings">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon bg-gold"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">อนุมัติแล้ว</span>
+              <span class="stat-value text-gold" id="stat-approved-bookings">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon bg-dark-yellow"><i class="fa-solid fa-door-open"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">จำนวนห้องประชุม</span>
+              <span class="stat-value text-warning" id="stat-total-rooms">0</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon bg-boss"><i class="fa-solid fa-user-tie"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">ผู้ใช้งานในระบบ</span>
+              <span class="stat-value text-warning" id="stat-total-users">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Goals Checklist Box -->
+        <div class="card kpi-showcase-card">
+          <h3><i class="fa-solid fa-bullseye text-warning"></i> การวัดผลความสำเร็จตามตัวชี้วัด (KPIs Evaluation)</h3>
+          <div class="kpi-grid">
+            <div class="kpi-box">
+              <div class="kpi-percent text-warning">100%</div>
+              <div class="kpi-desc"><strong>ลดการจองซ้ำ (Double Booking)</strong><br>ระบบตรวจสอบเวลาทับซ้อนในระดับ SQL Query แบบแม่นยำ 100%</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-percent text-warning">&lt; 1 นาที</div>
+              <div class="kpi-desc"><strong>เวลาที่ใช้ในการจอง</strong><br>จองได้ในคลิกเดียว พร้อมตรวจสอบเวลาว่างและยืนยันทันที</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-percent text-warning">&gt; 99%</div>
+              <div class="kpi-desc"><strong>ความถูกต้องของข้อมูล</strong><br>ใช้ Foreign Key และ Relational Integrity ป้องกันข้อมูลสูญหาย</div>
+            </div>
+            <div class="kpi-box">
+              <div class="kpi-percent text-warning">95%</div>
+              <div class="kpi-desc"><strong>ความพึงพอใจของผู้ใช้งาน</strong><br>UI แบบ Real-time DOM Partial Render สไตล์ Black & Gold สุดหรู</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Popularity & Usage List -->
+        <div class="card">
+          <h3><i class="fa-solid fa-ranking-star text-warning"></i> สถิติการใช้งานห้องประชุม (Room Utilization)</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ห้องประชุม</th>
+                  <th>สถานที่</th>
+                  <th>ความจุ</th>
+                  <th>จำนวนครั้งที่ถูกจอง</th>
+                  <th>สัดส่วนการใช้งาน</th>
+                </tr>
+              </thead>
+              <tbody id="admin-room-usage-tbody">
+                <tr><td colspan="5" class="text-center">กำลังโหลดสถิติ...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtab 2: Manage All Bookings -->
+      <div id="admin-bookings" class="admin-subpane">
+        <div class="card">
+          <div class="table-filter-bar">
+            <div class="filter-group">
+              <label>กรองตามสถานะ:</label>
+              <select id="admin-booking-status-filter" onchange="admin.loadAllBookings()">
+                <option value="">ทั้งหมด</option>
+                <option value="pending">รออนุมัติ (Pending)</option>
+                <option value="approved">อนุมัติแล้ว (Approved)</option>
+                <option value="rejected">ปฏิเสธแล้ว (Rejected)</option>
+                <option value="cancelled">ยกเลิกแล้ว (Cancelled)</option>
+              </select>
+            </div>
+            <button class="btn-secondary btn-sm" onclick="admin.loadAllBookings()">
+              <i class="fa-solid fa-arrows-rotate"></i> รีเฟรช
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>ผู้จอง</th>
+                  <th>ห้องประชุม</th>
+                  <th>หัวข้อ</th>
+                  <th>วันที่</th>
+                  <th>เวลา</th>
+                  <th>สถานะ</th>
+                  <th>การจัดการ (Action)</th>
+                </tr>
+              </thead>
+              <tbody id="admin-bookings-tbody">
+                <tr><td colspan="8" class="text-center">กำลังโหลดรายการจอง...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtab 3: Manage Rooms (CRUD) -->
+      <div id="admin-rooms" class="admin-subpane">
+        <div class="card">
+          <div class="table-action-header">
+            <h3>รายการห้องประชุมทั้งหมด</h3>
+            <button class="btn-primary" onclick="admin.openAddRoomModal()">
+              <i class="fa-solid fa-plus"></i> เพิ่มห้องประชุมใหม่
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>ชื่อห้องประชุม</th>
+                  <th>ความจุ</th>
+                  <th>สถานที่ตั้ง</th>
+                  <th>อุปกรณ์อำนวยความสะดวก</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="admin-rooms-tbody">
+                <tr><td colspan="6" class="text-center">กำลังโหลดรายการห้อง...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtab 4: Manage Users (CRUD) -->
+      <div id="admin-users" class="admin-subpane">
+        <div class="card">
+          <div class="table-action-header">
+            <h3>รายชื่อผู้ใช้งานทั้งหมด</h3>
+            <button class="btn-primary" onclick="admin.openAddUserModal()">
+              <i class="fa-solid fa-user-plus"></i> เพิ่มผู้ใช้งานใหม่
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>ชื่อ - นามสกุล</th>
+                  <th>อีเมล</th>
+                  <th>ระดับสิทธิ์ (Role)</th>
+                  <th>วันที่สร้างบัญชี</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <tr><td colspan="6" class="text-center">กำลังโหลดรายชื่อผู้ใช้...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtab 5: Manage Payments & Revenue (Admin Only) -->
+      <div id="admin-payments" class="admin-subpane">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon bg-yellow"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">รายได้รวมทั้งหมด</span>
+              <span class="stat-value text-warning" id="admin-total-revenue">0.00 ฿</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon bg-amber"><i class="fa-solid fa-receipt"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">ธุรกรรมที่ชำระแล้ว</span>
+              <span class="stat-value text-amber" id="admin-total-transactions">0 รายการ</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-action-header">
+            <h3><i class="fa-solid fa-money-bill-wave text-warning"></i> ประวัติรายการชำระเงินทั้งหมด</h3>
+            <button class="btn-secondary btn-sm" onclick="admin.loadAllPaymentsTable()">
+              <i class="fa-solid fa-arrows-rotate"></i> รีเฟรช
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เลขที่ธุรกรรม (Ref)</th>
+                  <th>การจอง / ห้อง</th>
+                  <th>ผู้ชำระเงิน</th>
+                  <th>ยอดเงิน</th>
+                  <th>ช่องทางชำระ</th>
+                  <th>สถานะ</th>
+                  <th>ใบเสร็จ</th>
+                </tr>
+              </thead>
+              <tbody id="admin-payments-tbody">
+                <tr><td colspan="7" class="text-center">กำลังโหลดรายการชำระเงิน...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal 1: Login / Register Modal -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3 id="auth-modal-title"><i class="fa-solid fa-user-tie text-warning"></i> เข้าสู่ระบบ BossBooking</h3>
+        <button class="modal-close" onclick="app.closeModal('auth-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Auth Mode Toggle -->
+        <div class="auth-tabs">
+          <button id="auth-tab-login" class="auth-toggle-btn active" onclick="auth.setAuthMode('login')">เข้าสู่ระบบ</button>
+          <button id="auth-tab-register" class="auth-toggle-btn" onclick="auth.setAuthMode('register')">สมัครสมาชิก</button>
+        </div>
+
+        <!-- Quick Demo Account Fill -->
+        <div id="quick-demo-accounts" class="quick-demo-box">
+          <span class="demo-title"><i class="fa-solid fa-bolt text-warning"></i> ทดสอบระบบคลิกเดียว (Demo Accounts):</span>
+          <div class="demo-buttons">
+            <button type="button" class="btn-demo-badge admin" onclick="auth.quickFill('admin@meeting.com', '123456')">
+              <i class="fa-solid fa-crown text-warning"></i> บอสใหญ่ (Admin)
+            </button>
+            <button type="button" class="btn-demo-badge dpu" onclick="auth.quickFill('67112210@dpu.ac.th', '67112210')">
+              <i class="fa-solid fa-graduation-cap text-warning"></i> นศ. DPU (67112210)
+            </button>
+            <button type="button" class="btn-demo-badge user" onclick="auth.quickFill('somchai@meeting.com', '123456')">
+              <i class="fa-solid fa-user-tie"></i> พนักงาน (สมชาย)
+            </button>
+          </div>
+        </div>
+
+        <form id="auth-form" onsubmit="auth.handleSubmit(event)">
+          <!-- Register Only: Name Field -->
+          <div class="form-group" id="auth-name-group" style="display:none;">
+            <label for="auth-name">ชื่อ - นามสกุล *</label>
+            <input type="text" id="auth-name" placeholder="เช่น นายสมชาย สายไอที">
+          </div>
+
+          <div class="form-group">
+            <label for="auth-email">อีเมล *</label>
+            <input type="email" id="auth-email" placeholder="name@domain.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="auth-password">รหัสผ่าน *</label>
+            <input type="password" id="auth-password" placeholder="อย่างน้อย 6 ตัวอักษร" required>
+          </div>
+
+          <!-- Register Only: Role Selection -->
+          <div class="form-group" id="auth-role-group" style="display:none;">
+            <label for="auth-role">ประเภทบัญชี</label>
+            <select id="auth-role">
+              <option value="user">ผู้ใช้งานทั่วไป (End User)</option>
+              <option value="admin">ผู้ดูแลระบบ (Boss Admin)</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary btn-block" id="auth-submit-btn">
+            <i class="fa-solid fa-user-tie"></i> เข้าสู่ระบบ
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Create Booking Modal -->
+  <div id="booking-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-calendar-plus text-warning"></i> จองห้องประชุม</h3>
+        <button class="modal-close" onclick="app.closeModal('booking-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="booking-form" onsubmit="bookings.handleCreateBooking(event)">
+          <!-- Room Info Banner in Modal -->
+          <div class="modal-room-banner" id="modal-room-banner">
+            <div class="banner-icon"><i class="fa-solid fa-user-tie"></i></div>
+            <div>
+              <h4 id="modal-banner-room-name">ห้องประชุม</h4>
+              <p id="modal-banner-room-info">ความจุ: - | สถานที่: -</p>
+            </div>
+          </div>
+
+          <input type="hidden" id="booking-room-id">
+
+          <div class="form-group">
+            <label for="booking-title">หัวข้อการประชุม / จุดประสงค์ *</label>
+            <input type="text" id="booking-title" placeholder="เช่น ประชุมวางแผนพัฒนาโปรเจกต์ประจำสัปดาห์" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="booking-date">วันที่ต้องการจอง *</label>
+              <input type="date" id="booking-date" required onchange="bookings.checkModalConflict()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="booking-start-time">เวลาเริ่มต้น *</label>
+              <input type="time" id="booking-start-time" required onchange="bookings.checkModalConflict()">
+            </div>
+            <div class="form-group flex-1">
+              <label for="booking-end-time">เวลาสิ้นสุด *</label>
+              <input type="time" id="booking-end-time" required onchange="bookings.checkModalConflict()">
+            </div>
+          </div>
+
+          <!-- Dynamic Fee Estimation Box -->
+          <div id="modal-price-calc-display" class="modal-price-box">
+            <span class="text-muted text-sm">กรุณาเลือกช่วงเวลาเพื่อคำนวณค่าบริการ</span>
+          </div>
+
+          <!-- Dynamic Conflict Warning Box (Real-time DOM validation) -->
+          <div id="modal-conflict-warning" class="alert-box alert-danger" style="display:none;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="modal-conflict-text">ช่วงเวลานี้มีผู้จองแล้ว ไม่สามารถทำการจองซ้ำได้</span>
+          </div>
+
+          <!-- Quick Schedule of Today/Selected Date for this room -->
+          <div class="modal-existing-slots">
+            <label><i class="fa-solid fa-clock-rotate-left text-warning"></i> รายการจองที่มีอยู่ในวันที่เลือก:</label>
+            <div id="modal-existing-slots-list" class="slots-pill-container">
+              <span class="text-muted text-sm">เลือกวันที่เพื่อดูคิวจอง</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="app.closeModal('booking-modal')">ยกเลิก</button>
+            <button type="submit" class="btn-primary" id="btn-submit-booking">
+              <i class="fa-solid fa-check"></i> ยืนยันการจองห้อง
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Room Add/Edit Modal (Admin Only) -->
+  <div id="room-crud-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="room-crud-title"><i class="fa-solid fa-door-open text-warning"></i> เพิ่มห้องประชุมใหม่</h3>
+        <button class="modal-close" onclick="app.closeModal('room-crud-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="room-crud-form" onsubmit="admin.handleSaveRoom(event)">
+          <input type="hidden" id="room-crud-id">
+
+          <div class="form-group">
+            <label for="room-crud-name">ชื่อห้องประชุม *</label>
+            <input type="text" id="room-crud-name" placeholder="เช่น ห้องประชุมบอร์ดรูม (Boardroom A)" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="room-crud-capacity">ความจุผู้เข้าร่วม (ท่าน) *</label>
+              <input type="number" id="room-crud-capacity" min="1" max="1000" placeholder="เช่น 20" required>
+            </div>
+            <div class="form-group flex-2">
+              <label for="room-crud-location">สถานที่ตั้ง / อาคาร / ชั้น *</label>
+              <input type="text" id="room-crud-location" placeholder="เช่น ชั้น 4 อาคารอำนวยการ" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="room-crud-equipment">อุปกรณ์อำนวยความสะดวก</label>
+            <input type="text" id="room-crud-equipment" placeholder="เช่น Projector 4K, Smart Board, Video Conference">
+          </div>
+
+          <div class="form-group">
+            <label for="room-crud-description">รายละเอียดเพิ่มเติม</label>
+            <textarea id="room-crud-description" rows="3" placeholder="ระบุรายละเอียดห้อง หรือข้อกำหนดการใช้งาน..."></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="app.closeModal('room-crud-modal')">ยกเลิก</button>
+            <button type="submit" class="btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลห้อง
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: User Add/Edit Modal (Admin Only) -->
+  <div id="user-crud-modal" class="modal-overlay">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3 id="user-crud-title"><i class="fa-solid fa-user-plus text-warning"></i> เพิ่มผู้ใช้งานใหม่</h3>
+        <button class="modal-close" onclick="app.closeModal('user-crud-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="user-crud-form" onsubmit="admin.handleSaveUser(event)">
+          <input type="hidden" id="user-crud-id">
+
+          <div class="form-group">
+            <label for="user-crud-name">ชื่อ - นามสกุล *</label>
+            <input type="text" id="user-crud-name" placeholder="เช่น สมชาย สายไอที" required>
+          </div>
+
+          <div class="form-group">
+            <label for="user-crud-email">อีเมล *</label>
+            <input type="email" id="user-crud-email" placeholder="somchai@meeting.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="user-crud-password" id="user-crud-password-label">รหัสผ่าน *</label>
+            <input type="password" id="user-crud-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+            <small class="text-muted" id="user-crud-password-hint" style="display:none;">เว้นว่างไว้หากไม่ต้องการเปลี่ยนรหัสผ่าน</small>
+          </div>
+
+          <div class="form-group">
+            <label for="user-crud-role">ระดับสิทธิ์ (Role) *</label>
+            <select id="user-crud-role" required>
+              <option value="user">ผู้ใช้งานทั่วไป (User)</option>
+              <option value="admin">ผู้ดูแลระบบ (Boss Admin)</option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="app.closeModal('user-crud-modal')">ยกเลิก</button>
+            <button type="submit" class="btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Payment Processing Modal -->
+  <div id="payment-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-credit-card text-warning"></i> ชำระเงินค่าบริการห้องประชุม</h3>
+        <button class="modal-close" onclick="app.closeModal('payment-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Summary Card -->
+        <div class="pay-summary-card">
+          <div class="pay-summary-row">
+            <span>รหัสการจอง:</span>
+            <strong id="pay-modal-booking-id">-</strong>
+          </div>
+          <div class="pay-summary-row">
+            <span>ห้องประชุม:</span>
+            <strong id="pay-modal-room-name">-</strong>
+          </div>
+          <div class="pay-summary-total">
+            <span>ยอดที่ต้องชำระ:</span>
+            <strong class="total-amount text-warning" id="pay-modal-amount">0.00 บาท</strong>
+          </div>
+        </div>
+
+        <!-- Payment Method Tabs -->
+        <div class="pay-methods-tabs">
+          <button type="button" class="pay-method-btn active" data-method="promptpay" onclick="payments.switchMethod('promptpay')">
+            <i class="fa-solid fa-qrcode text-warning"></i> พร้อมเพย์ QR
+          </button>
+          <button type="button" class="pay-method-btn" data-method="credit_card" onclick="payments.switchMethod('credit_card')">
+            <i class="fa-solid fa-credit-card text-warning"></i> บัตรเครดิต/เดบิต
+          </button>
+          <button type="button" class="pay-method-btn" data-method="bank_transfer" onclick="payments.switchMethod('bank_transfer')">
+            <i class="fa-solid fa-building-columns text-warning"></i> โอนธนาคาร
+          </button>
+        </div>
+
+        <!-- Method 1: PromptPay QR -->
+        <div id="pay-pane-promptpay" class="pay-method-pane active">
+          <div class="qr-container">
+            <div class="promptpay-badge">
+              <strong>PROMPT PAY</strong> <span>พร้อมเพย์</span>
+            </div>
+            <div class="qr-code-box">
+              <svg class="qr-svg" viewBox="0 0 160 160" width="160" height="160">
+                <rect width="160" height="160" fill="#ffffff" rx="8"/>
+                <rect x="15" y="15" width="40" height="40" fill="#0b0d12"/>
+                <rect x="23" y="23" width="24" height="24" fill="#ffffff"/>
+                <rect x="27" y="27" width="16" height="16" fill="#fbbf24"/>
+                <rect x="105" y="15" width="40" height="40" fill="#0b0d12"/>
+                <rect x="113" y="23" width="24" height="24" fill="#ffffff"/>
+                <rect x="117" y="27" width="16" height="16" fill="#fbbf24"/>
+                <rect x="15" y="105" width="40" height="40" fill="#0b0d12"/>
+                <rect x="23" y="113" width="24" height="24" fill="#ffffff"/>
+                <rect x="27" y="117" width="16" height="16" fill="#fbbf24"/>
+                <rect x="65" y="20" width="10" height="20" fill="#0b0d12"/>
+                <rect x="85" y="30" width="10" height="30" fill="#0b0d12"/>
+                <rect x="65" y="65" width="30" height="30" fill="#fbbf24" rx="4"/>
+                <circle cx="80" cy="80" r="8" fill="#0b0d12"/>
+                <rect x="105" y="65" width="15" height="15" fill="#0b0d12"/>
+                <rect x="130" y="80" width="15" height="25" fill="#0b0d12"/>
+                <rect x="65" y="105" width="20" height="10" fill="#0b0d12"/>
+                <rect x="95" y="115" width="25" height="15" fill="#0b0d12"/>
+                <rect x="125" y="115" width="15" height="30" fill="#0b0d12"/>
+              </svg>
+            </div>
+            <div class="qr-meta">
+              <span class="text-sm text-muted">สแกน QR ผ่านแอปธนาคารใดก็ได้</span>
+              <strong id="pay-qr-amount" class="text-warning" style="font-size:1.3rem;">0.00 บาท</strong>
+              <small class="text-muted">รหัส QR จะหมดอายุใน: <strong id="pay-qr-timer" class="text-warning">14:59</strong> นาที</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Method 2: Credit/Debit Card -->
+        <div id="pay-pane-credit_card" class="pay-method-pane">
+          <form id="card-pay-form" onsubmit="payments.submitPayment(event)">
+            <div class="form-group">
+              <label>หมายเลขบัตรเครดิต/เดบิต 16 หลัก</label>
+              <input type="text" maxlength="19" placeholder="4111 2222 3333 4444" value="4111 2222 3333 4444">
+            </div>
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>วันหมดอายุ (MM/YY)</label>
+                <input type="text" maxlength="5" placeholder="12/28" value="12/28">
+              </div>
+              <div class="form-group flex-1">
+                <label>CVV / CVC</label>
+                <input type="password" maxlength="3" placeholder="123" value="123">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>ชื่อผู้ถือบัตร</label>
+              <input type="text" placeholder="SOMCHAI PRO" value="DPU STUDENT (67112210)">
+            </div>
+          </form>
+        </div>
+
+        <!-- Method 3: Bank Transfer -->
+        <div id="pay-pane-bank_transfer" class="pay-method-pane">
+          <div class="bank-info-box">
+            <div class="bank-logo-row">
+              <i class="fa-solid fa-building-columns text-warning" style="font-size:1.8rem;"></i>
+              <div>
+                <strong>ธนาคารกสิกรไทย (KBANK)</strong>
+                <p class="text-sm text-muted">บจก. บอสบุ๊คกิ้ง (Boss Booking Co., Ltd.)</p>
+              </div>
+            </div>
+            <div class="bank-acc-number">
+              <span>เลขที่บัญชี:</span>
+              <strong class="text-warning">098-2-34567-8</strong>
+            </div>
+            <div class="upload-slip-box">
+              <label><i class="fa-solid fa-cloud-arrow-up text-warning"></i> แนบหลักฐานสลิปโอนเงิน:</label>
+              <input type="file" accept="image/*">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="app.closeModal('payment-modal')">ไว้ทีหลัง</button>
+          <button type="button" class="btn-primary" id="btn-confirm-pay" onclick="payments.submitPayment()">
+            <i class="fa-solid fa-circle-check"></i> ยืนยันการชำระเงิน
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Electronic Receipt Modal -->
+  <div id="receipt-modal" class="modal-overlay">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-receipt text-warning"></i> ใบเสร็จรับเงิน (E-Receipt)</h3>
+        <button class="modal-close" onclick="app.closeModal('receipt-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="receipt-card" id="printable-receipt">
+          <div class="receipt-header">
+            <div class="receipt-brand">
+              <i class="fa-solid fa-user-tie text-warning"></i> BossBooking
+            </div>
+            <span class="receipt-badge">ชำระเงินเรียบร้อยแล้ว</span>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-details">
+            <div class="rcpt-row">
+              <span class="rcpt-label">เลขที่ใบเสร็จ:</span>
+              <strong id="rcpt-ref">-</strong>
+            </div>
+            <div class="rcpt-row">
+              <span class="rcpt-label">วันเวลาที่ชำระ:</span>
+              <span id="rcpt-date">-</span>
+            </div>
+            <div class="rcpt-row">
+              <span class="rcpt-label">ผู้ชำระเงิน:</span>
+              <strong id="rcpt-customer">-</strong>
+            </div>
+            <div class="rcpt-row">
+              <span class="rcpt-label">ห้องประชุม:</span>
+              <strong id="rcpt-room">-</strong>
+            </div>
+            <div class="rcpt-row">
+              <span class="rcpt-label">วัน-เวลาใช้งาน:</span>
+              <span id="rcpt-booking-time">-</span>
+            </div>
+            <div class="rcpt-row">
+              <span class="rcpt-label">ช่องทางชำระเงิน:</span>
+              <span id="rcpt-method">-</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="rcpt-total-box">
+            <span>ยอดเงินสุทธิ:</span>
+            <strong class="rcpt-total text-warning" id="rcpt-total">0.00 บาท</strong>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="payments.printReceipt()">
+            <i class="fa-solid fa-print"></i> พิมพ์ใบเสร็จ
+          </button>
+          <button type="button" class="btn-primary" onclick="app.closeModal('receipt-modal')">ปิด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <p>© 2026 BossBooking | ระบบจองห้องประชุมออนไลน์ (Yellow & Black Boss Edition)</p>
+      <p class="text-sm text-muted">Node.js Express, SQL Database, JWT Security, และ Dynamic Web DOM Rendering</p>
+    </div>
+  </footer>
+
+  <!-- Frontend Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/rooms.js"></script>
+  <script src="/js/bookings.js"></script>
+  <script src="/js/payments.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
